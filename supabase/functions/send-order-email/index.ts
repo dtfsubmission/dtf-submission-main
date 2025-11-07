@@ -1,12 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
-// 🔹 Gmail Credentials - Replace 'your-16-char-app-password-here' with your actual Gmail App Password
-const GMAIL_USER = 'dtfsubmission@gmail.com'
-const GMAIL_APP_PASSWORD = 'ckilsydhojnoppqm'
+// 🔹 Resend API Key - Replace with your actual key
+const RESEND_API_KEY = 're_3xhL5QXr_CTkKpbujeu5rcJDLqd3YnVfG'
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
@@ -20,7 +17,9 @@ serve(async (req) => {
   try {
     const { orderId, customerInfo, items, totalPrice } = await req.json()
 
-    // Build email HTML content
+    console.log('Processing order:', orderId)
+
+    // Build email HTML
     let itemsHtml = ''
     items.forEach((item: any) => {
       itemsHtml += `
@@ -29,7 +28,7 @@ serve(async (req) => {
           <td style="padding: 10px; border: 1px solid #ddd;">${item.quantity}</td>
           <td style="padding: 10px; border: 1px solid #ddd;">$${item.price}</td>
           <td style="padding: 10px; border: 1px solid #ddd;">
-            <a href="${item.fileURL}" download style="color: #0066cc; text-decoration: none; font-weight: bold;">📥 Download High-Res Image</a>
+            <a href="${item.fileURL}" style="color: #0066cc; text-decoration: none; font-weight: bold;">📥 Download High-Res Image</a>
           </td>
         </tr>
       `
@@ -39,21 +38,14 @@ serve(async (req) => {
       <!DOCTYPE html>
       <html>
       <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-          h1 { color: #0066cc; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th { background-color: #0066cc; color: white; padding: 12px; text-align: left; }
-          .info-section { background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px; }
-        </style>
+        <meta charset="utf-8">
       </head>
-      <body>
-        <div class="container">
-          <h1>🎨 New DTF Order Submission</h1>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #0066cc;">🎨 New DTF Order Submission</h1>
           <p><strong>Order ID:</strong> ${orderId}</p>
           
-          <div class="info-section">
+          <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px;">
             <h2>Customer Information</h2>
             <p><strong>Name:</strong> ${customerInfo.firstName} ${customerInfo.lastName}</p>
             <p><strong>Email:</strong> ${customerInfo.email}</p>
@@ -63,13 +55,13 @@ serve(async (req) => {
           </div>
 
           <h2>Order Items</h2>
-          <table>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <thead>
               <tr>
-                <th>File Name</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Download</th>
+                <th style="background-color: #0066cc; color: white; padding: 12px; text-align: left;">File Name</th>
+                <th style="background-color: #0066cc; color: white; padding: 12px; text-align: left;">Quantity</th>
+                <th style="background-color: #0066cc; color: white; padding: 12px; text-align: left;">Price</th>
+                <th style="background-color: #0066cc; color: white; padding: 12px; text-align: left;">Download</th>
               </tr>
             </thead>
             <tbody>
@@ -89,32 +81,38 @@ serve(async (req) => {
       </html>
     `
 
-    // Configure SMTP client for Gmail
-    const client = new SMTPClient({
-      connection: {
-        hostname: 'smtp.gmail.com',
-        port: 587,
-        tls: true,
-        auth: {
-          username: GMAIL_USER,
-          password: GMAIL_APP_PASSWORD,
-        },
+    console.log('Sending email via Resend...')
+
+    // Send email using Resend API
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify({
+        from: 'DTF Orders <onboarding@resend.dev>',
+        to: ['dtfsubmission@gmail.com'],
+        subject: `NEW ORDER - ${customerInfo.firstName} ${customerInfo.lastName}`,
+        html: emailHtml
+      })
     })
 
-    // Send email
-    await client.send({
-      from: GMAIL_USER,
-      to: GMAIL_USER,
-      subject: `NEW ORDER - ${customerInfo.firstName} ${customerInfo.lastName}`,
-      content: 'This is an HTML email. Please use an HTML-capable email client.',
-      html: emailHtml,
-    })
+    if (!resendResponse.ok) {
+      const errorData = await resendResponse.text()
+      console.error('Resend API error:', errorData)
+      throw new Error(`Failed to send email: ${resendResponse.status} - ${errorData}`)
+    }
 
-    await client.close()
+    const resendData = await resendResponse.json()
+    console.log('Email sent successfully! ID:', resendData.id)
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Email sent successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Email sent successfully',
+        emailId: resendData.id
+      }),
       {
         headers: {
           'Content-Type': 'application/json',
@@ -124,9 +122,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error sending email:', error)
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message
+      }),
       {
         headers: {
           'Content-Type': 'application/json',
