@@ -1,10 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 // 🔹 Gmail Credentials - Replace 'your-16-char-app-password-here' with your actual Gmail App Password
 const GMAIL_USER = 'dtfsubmission@gmail.com'
-const GMAIL_APP_PASSWORD = 'ckil sydh ojno ppqm'
+const GMAIL_APP_PASSWORD = 'your-16-char-app-password-here'
 
 serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      }
+    })
+  }
+
   try {
     const { orderId, customerInfo, items, totalPrice } = await req.json()
 
@@ -77,44 +89,51 @@ serve(async (req) => {
       </html>
     `
 
-    // Send email using Gmail SMTP via basic auth
-    const message = [
-      `From: ${GMAIL_USER}`,
-      `To: ${GMAIL_USER}`,
-      `Subject: NEW ORDER - ${customerInfo.firstName} ${customerInfo.lastName}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: text/html; charset=utf-8`,
-      '',
-      emailHtml
-    ].join('\r\n')
-
-    const base64Message = btoa(unescape(encodeURIComponent(message)))
-    
-    // Use Gmail API to send
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${GMAIL_USER}:${GMAIL_APP_PASSWORD}`)}`,
-        'Content-Type': 'application/json',
+    // Configure SMTP client for Gmail
+    const client = new SMTPClient({
+      connection: {
+        hostname: 'smtp.gmail.com',
+        port: 587,
+        tls: true,
+        auth: {
+          username: GMAIL_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
       },
-      body: JSON.stringify({
-        raw: base64Message
-      })
     })
 
-    if (!response.ok) {
-      throw new Error(`Gmail API error: ${response.statusText}`)
-    }
+    // Send email
+    await client.send({
+      from: GMAIL_USER,
+      to: GMAIL_USER,
+      subject: `NEW ORDER - ${customerInfo.firstName} ${customerInfo.lastName}`,
+      content: 'This is an HTML email. Please use an HTML-capable email client.',
+      html: emailHtml,
+    })
+
+    await client.close()
 
     return new Response(
       JSON.stringify({ success: true, message: 'Email sent successfully' }),
-      { headers: { 'Content-Type': 'application/json' } }
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        status: 200,
+      }
     )
   } catch (error) {
     console.error('Error sending email:', error)
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        status: 500,
+      }
     )
   }
 })
