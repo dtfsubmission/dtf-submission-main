@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const GMAIL_USER = Deno.env.get('GMAIL_USER')!
-const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')!
+// 🔹 Gmail Credentials - Replace 'your-16-char-app-password-here' with your actual Gmail App Password
+const GMAIL_USER = 'dtfsubmission@gmail.com'
+const GMAIL_APP_PASSWORD = 'ckil sydh ojno ppqm'
 
 serve(async (req) => {
   try {
@@ -16,7 +17,7 @@ serve(async (req) => {
           <td style="padding: 10px; border: 1px solid #ddd;">${item.quantity}</td>
           <td style="padding: 10px; border: 1px solid #ddd;">$${item.price}</td>
           <td style="padding: 10px; border: 1px solid #ddd;">
-            <a href="${item.fileURL}" download style="color: #0066cc; text-decoration: none;">Download Image</a>
+            <a href="${item.fileURL}" download style="color: #0066cc; text-decoration: none; font-weight: bold;">📥 Download High-Res Image</a>
           </td>
         </tr>
       `
@@ -79,8 +80,8 @@ serve(async (req) => {
     // Send email using Gmail SMTP via basic auth
     const message = [
       `From: ${GMAIL_USER}`,
-      `To: orders@sticknstitch.com`,
-      `Subject: New DTF Order #${orderId.substring(0, 8)}`,
+      `To: ${GMAIL_USER}`,
+      `Subject: NEW ORDER - ${customerInfo.firstName} ${customerInfo.lastName}`,
       `MIME-Version: 1.0`,
       `Content-Type: text/html; charset=utf-8`,
       '',
