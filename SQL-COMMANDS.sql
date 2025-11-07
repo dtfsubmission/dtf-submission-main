@@ -1,9 +1,8 @@
 -- =====================================================
--- DTF SUBMISSION - SUPABASE DATABASE SETUP
--- Copy and paste this entire file into Supabase SQL Editor
+-- COPY AND PASTE THIS ENTIRE FILE INTO SUPABASE SQL EDITOR
 -- =====================================================
 
--- Step 1: Create orders table
+-- Create orders table
 CREATE TABLE orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   first_name TEXT NOT NULL,
@@ -19,7 +18,7 @@ CREATE TABLE orders (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Step 2: Create order_items table
+-- Create order_items table
 CREATE TABLE order_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
@@ -30,56 +29,47 @@ CREATE TABLE order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Step 3: Enable Row Level Security
+-- Enable Row Level Security
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
--- Step 4: Create policy to allow anonymous inserts to orders
+-- Allow anonymous inserts to orders
 CREATE POLICY "Allow anonymous inserts to orders"
 ON orders FOR INSERT
 TO anon
 WITH CHECK (true);
 
--- Step 5: Create policy to allow anonymous inserts to order_items
+-- Allow anonymous inserts to order_items
 CREATE POLICY "Allow anonymous inserts to order_items"
 ON order_items FOR INSERT
 TO anon
 WITH CHECK (true);
 
--- Step 6: Create policy to allow service role to read orders
+-- Allow service role to read orders
 CREATE POLICY "Allow service role to read orders"
 ON orders FOR SELECT
 TO service_role
 USING (true);
 
--- Step 7: Create policy to allow service role to read order_items
+-- Allow service role to read order_items
 CREATE POLICY "Allow service role to read order_items"
 ON order_items FOR SELECT
 TO service_role
 USING (true);
 
--- Step 8: Create storage bucket for order images
+-- Create storage bucket
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('order-images', 'order-images', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Step 9: Allow anonymous users to upload to storage
+-- Allow anonymous uploads to storage
 CREATE POLICY "Allow anonymous uploads"
 ON storage.objects FOR INSERT
 TO anon
 WITH CHECK (bucket_id = 'order-images');
 
--- Step 10: Allow public access to read files from storage
+-- Allow public access to storage files
 CREATE POLICY "Allow public access to order images"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'order-images');
-
--- =====================================================
--- SETUP COMPLETE!
--- =====================================================
--- Next steps:
--- 1. Go to Storage in Supabase Dashboard and verify 'order-images' bucket exists
--- 2. Deploy the Edge Function for email notifications (see README-SETUP.md)
--- 3. Set up Gmail credentials (see README-SETUP.md)
--- =====================================================
