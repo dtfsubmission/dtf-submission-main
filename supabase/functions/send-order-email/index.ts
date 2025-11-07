@@ -3,7 +3,7 @@ import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 // 🔹 Gmail Credentials - Replace 'your-16-char-app-password-here' with your actual Gmail App Password
 const GMAIL_USER = 'dtfsubmission@gmail.com'
-const GMAIL_APP_PASSWORD = 'ckil sydh ojno ppqm'
+const GMAIL_APP_PASSWORD = 'ckilsydhojnoppqm'
 
 serve(async (req) => {
   // Handle CORS
