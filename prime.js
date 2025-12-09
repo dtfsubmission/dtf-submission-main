@@ -1,10 +1,8 @@
-// Import Supabase
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-// 🔹 Initialize Supabase
+// 🔹 Initialize Supabase using global object from CDN
 const supabaseUrl = 'https://ftlgxxntrqcxsagsymvw.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0bGd4eG50cnFjeHNhZ3N5bXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MTk5NzEsImV4cCI6MjA3ODA5NTk3MX0.XmzDMeZLGKQvjQgA-4iLRKMnvTJs2GcfQC3FLVLxKhA';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const { createClient } = supabase;
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
 // 🔹 Price Constant
 const pricePerSqInch = 0.0278;
@@ -214,7 +212,7 @@ document.getElementById("submitOrder").addEventListener("click", async function(
             const filePath = `orders/${fileName}`;
 
             // Upload to Supabase Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage
                 .from('order-images')
                 .upload(filePath, item.file);
 
@@ -223,7 +221,7 @@ document.getElementById("submitOrder").addEventListener("click", async function(
             }
 
             // Get public URL for the uploaded file
-            const { data: urlData } = supabase.storage
+            const { data: urlData } = supabaseClient.storage
                 .from('order-images')
                 .getPublicUrl(filePath);
 
@@ -237,7 +235,7 @@ document.getElementById("submitOrder").addEventListener("click", async function(
         }
 
         // 🔹 Insert order into database
-        const { data: orderData, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabaseClient
             .from('orders')
             .insert([{
                 first_name: customerInfo.firstName,
@@ -268,7 +266,7 @@ document.getElementById("submitOrder").addEventListener("click", async function(
             price: parseFloat(file.price)
         }));
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseClient
             .from('order_items')
             .insert(orderItemsData);
 
@@ -277,7 +275,7 @@ document.getElementById("submitOrder").addEventListener("click", async function(
         }
 
         // 🔹 Call edge function to send email
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-order-email', {
+        const { data: emailData, error: emailError } = await supabaseClient.functions.invoke('send-order-email', {
             body: {
                 orderId: orderId,
                 customerInfo: customerInfo,
