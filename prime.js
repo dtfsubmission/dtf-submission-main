@@ -1,8 +1,7 @@
 // 🔹 Initialize Supabase using global object from CDN
 const supabaseUrl = 'https://ftlgxxntrqcxsagsymvw.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0bGd4eG50cnFjeHNhZ3N5bXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MTk5NzEsImV4cCI6MjA3ODA5NTk3MX0.XmzDMeZLGKQvjQgA-4iLRKMnvTJs2GcfQC3FLVLxKhA';
-const { createClient } = supabase;
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // 🔹 Price Constant
 const pricePerSqInch = 0.0278;
